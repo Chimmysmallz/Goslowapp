@@ -1,0 +1,15 @@
+; Go-Slow — Godot 4 starter project
+config_version=5
+
+[application]
+config/name="Go-Slow"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.3")
+config/icon="res://art/icon-512.png"
+
+[display]
+window/size/viewport_width=440
+window/size/viewport_height=860
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+window/handheld/orientation="portrait"

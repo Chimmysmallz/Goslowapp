@@ -1,0 +1,8 @@
+# Checks once a week whether the GitHub Actions used to publish the game have security updates,
+# and opens a pull request for you to approve. The game itself uses no outside libraries.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

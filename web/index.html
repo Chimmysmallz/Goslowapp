@@ -1,0 +1,759 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="color-scheme" content="light dark">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data:; font-src 'self'; connect-src 'self'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<title>GO-SLOW — The Month</title>
+<meta name="theme-color" content="#F7C948">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-title" content="Go-Slow">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{ --yellow:#F7C948; --yd:#F2B705; --ink:#161616; --orange:#E8590C; --green:#16A34A; --red:#DC2626; --blue:#2563EB; --page:#111; }
+  @media (prefers-color-scheme: dark){ :root{ --page:#0c0c0c; } }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; }
+  html,body{ margin:0; height:100%; }
+  body{ font-family:'Segoe UI',system-ui,Arial,sans-serif; background:var(--page); display:flex; justify-content:center; align-items:center; }
+  .app{ position:relative; width:100%; max-width:440px; height:100vh; max-height:900px; overflow:hidden; background:#000; box-shadow:0 0 40px rgba(0,0,0,.5); }
+  @media(min-width:460px){ .app{ border-radius:22px; height:860px; border:3px solid var(--ink); } }
+  .scene{ position:absolute; inset:0; }
+  .bg{ position:absolute; inset:0; background-size:cover; background-position:center; transition:opacity .45s ease; }
+  .hud{ position:absolute; top:0; left:0; right:0; display:flex; gap:5px; padding:8px 10px; z-index:6; flex-wrap:wrap; align-items:center; }
+  .chip{ background:rgba(0,0,0,.58); color:#fff; font-size:11px; font-weight:800; padding:4px 8px; border-radius:12px; }
+  .chip b{ color:var(--yellow); } .chip.m b{ color:#7CFFA0; }
+  .snd{ margin-left:auto; border:none; background:rgba(0,0,0,.58); color:#fff; font-size:14px; padding:4px 9px; border-radius:12px; cursor:pointer; }
+  .snd2{ border:none; background:rgba(0,0,0,.58); color:#fff; font-size:13px; font-weight:800; padding:5px 10px; border-radius:12px; cursor:pointer; }
+  .menu-tag{ color:var(--muted); font-size:12px; margin-top:12px; }
+  #name-input{ font-size:18px; padding:12px 14px; border-radius:12px; border:2px solid var(--yellow); background:#fff; color:#111; text-align:center; width:220px; margin-bottom:16px; }
+  .looks{ display:flex; gap:12px; justify-content:center; margin-bottom:18px; }
+  .look{ width:82px; height:112px; border-radius:14px; overflow:hidden; border:3px solid transparent; background:rgba(255,255,255,.12); cursor:pointer; display:flex; align-items:flex-end; justify-content:center; }
+  .look img{ width:150%; } .look.sel{ border-color:var(--yellow); box-shadow:0 0 0 3px rgba(247,201,72,.35); }
+  .char{ position:absolute; bottom:23%; height:62%; transform:translateX(-50%); transition:left .6s cubic-bezier(.4,0,.2,1), opacity .4s, filter .3s; filter:brightness(.6) saturate(.9); z-index:1; }
+  .char img{ height:100%; display:block; animation:bob 2.6s ease-in-out infinite; }
+  .char.talk{ filter:none; z-index:3; } .char.talk img{ animation:bobt .5s ease-in-out infinite; }
+  @keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
+  @keyframes bobt{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-3px);} }
+  .dbox{ position:absolute; left:10px; right:10px; bottom:12px; z-index:5; background:rgba(20,20,20,.93); border:2px solid var(--yellow); border-radius:16px; padding:12px 14px 16px; display:none; min-height:96px; }
+  .dbox.show{ display:block; animation:rise .18s ease; }
+  @keyframes rise{ from{transform:translateY(8px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+  .dbox .name{ font-weight:900; font-size:15px; margin-bottom:5px; }
+  .dbox .txt{ color:#fff; font-size:16px; line-height:1.45; } .dbox .txt.narr{ font-style:italic; color:#ffe9b8; }
+  .dbox .portrait{ position:absolute; top:-32px; left:10px; width:56px; height:56px; border-radius:50%; border:3px solid var(--yellow); background-size:220%; background-position:center 14%; box-shadow:0 4px 10px rgba(0,0,0,.5); }
+  .dbox .portrait.emoji{ display:flex; align-items:center; justify-content:center; font-size:30px; background:#333; }
+  .dbox.hasport{ padding-left:78px; min-height:70px; }
+  .tip{ position:absolute; right:12px; bottom:8px; color:var(--yellow); font-size:18px; animation:blink 1s infinite; }
+  @keyframes blink{ 0%,100%{opacity:.3;} 50%{opacity:1;} }
+  .choices{ position:absolute; left:16px; right:16px; bottom:20px; z-index:7; display:none; flex-direction:column; gap:9px; }
+  .choices.show{ display:flex; }
+  .cprompt{ text-align:center; color:#fff; font-weight:800; background:rgba(0,0,0,.62); padding:8px; border-radius:12px; }
+  .cbtn{ border:none; border-radius:14px; padding:13px; font-weight:800; font-size:14px; cursor:pointer; text-align:left; background:linear-gradient(180deg,#fff,#f3ead0); color:var(--ink); box-shadow:0 4px 0 var(--yd); }
+  .cbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--yd); }
+  .pbanner{ position:absolute; inset:0; z-index:8; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,.82); color:var(--yellow); font-size:22px; font-weight:900; letter-spacing:1px; text-align:center; padding:24px; opacity:0; pointer-events:none; transition:opacity .3s; }
+  .pbanner.show{ opacity:1; }
+  .ov{ position:absolute; inset:0; z-index:9; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; background:linear-gradient(180deg,rgba(0,0,0,.62),rgba(0,0,0,.88)); color:#fff; padding:26px; }
+  .ov.hide{ display:none; }
+  .ov h1{ font-size:28px; font-weight:900; margin:0 0 6px; color:var(--yellow); text-shadow:2px 2px 0 var(--orange); }
+  .ov h2{ font-size:17px; margin:0 0 14px; max-width:330px; line-height:1.4; }
+  .ov p{ font-size:13.5px; color:#eee; max-width:300px; }
+  .play{ margin-top:16px; border:none; border-radius:16px; padding:15px 30px; font-weight:900; font-size:18px; cursor:pointer; background:var(--yellow); color:var(--ink); box-shadow:0 5px 0 var(--yd); }
+  .play:active{ transform:translateY(3px); box-shadow:0 2px 0 var(--yd); }
+  .sumrow{ display:flex; gap:8px; margin:10px 0; flex-wrap:wrap; justify-content:center; max-width:340px; }
+  .sumrow div{ background:rgba(255,255,255,.1); padding:9px 12px; border-radius:12px; font-weight:800; font-size:12px; }
+  .board{ background:linear-gradient(180deg,#12212e,#0a141c); }
+  .board h3{ color:var(--yellow); font-size:16px; margin:0 0 4px; text-align:center; }
+  .board .sub{ color:#bcd; font-size:12px; margin-bottom:14px; }
+  .bcards{ display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px; }
+  .bcard{ border:2px solid #2a4a63; background:#16283a; color:#dbeafe; border-radius:12px; padding:11px 12px; cursor:pointer; text-align:left; }
+  .bcard b{ display:block; color:#fff; font-size:14px; margin-bottom:3px; } .bcard span{ font-size:12px; color:#9fb8cf; }
+  .bcard.sel{ border-color:var(--yellow); box-shadow:0 0 0 3px rgba(247,201,72,.25); }
+  .bmsg{ margin-top:14px; font-weight:800; font-size:14px; min-height:20px; }
+  .bmsg.good{ color:#7fe0a3; } .bmsg.bad{ color:#ff9a9a; }
+  /* ===== juicy mobile polish ===== */
+  .vignette{ position:absolute; inset:0; z-index:4; pointer-events:none; box-shadow:inset 0 0 120px 34px rgba(0,0,0,.55); }
+  .pbar{ position:absolute; top:0; left:0; right:0; height:4px; background:rgba(0,0,0,.35); z-index:6; }
+  .pfill{ height:100%; width:0%; background:linear-gradient(90deg,var(--orange),var(--yellow)); box-shadow:0 0 8px var(--yellow); transition:width .5s ease; }
+  .dbox{ border-radius:20px; border:none; background:linear-gradient(180deg,rgba(28,28,32,.96),rgba(13,13,15,.97)); box-shadow:0 -2px 24px rgba(0,0,0,.5), 0 0 0 2px rgba(247,201,72,.55); }
+  .dbox .name{ position:absolute; top:-15px; left:78px; margin:0; padding:3px 12px; border-radius:12px; font-size:13px !important; background:linear-gradient(180deg,#fff,#f3ead0); color:#161616 !important; box-shadow:0 3px 7px rgba(0,0,0,.45); }
+  .dbox .txt{ font-size:16.5px; }
+  .char.talk{ transform:translateX(-50%) scale(1.05); }
+  .statpop{ position:absolute; left:50%; top:62px; z-index:8; font-weight:900; font-size:16px; text-shadow:0 2px 6px rgba(0,0,0,.85); pointer-events:none; animation:floatup 1.5s ease-out forwards; }
+  @keyframes floatup{ 0%{opacity:0; transform:translate(-50%,8px) scale(.8);} 16%{opacity:1; transform:translate(-50%,0) scale(1.08);} 78%{opacity:1;} 100%{opacity:0; transform:translate(-50%,-28px) scale(1);} }
+  .cprompt{ border-radius:14px; box-shadow:0 4px 14px rgba(0,0,0,.45); animation:choicein .24s both; }
+  .cbtn{ position:relative; border-radius:16px; padding:15px 42px 15px 16px; font-size:15px; background:linear-gradient(180deg,#fffdf7,#f5ead0); box-shadow:0 4px 0 #d9c893, 0 6px 14px rgba(0,0,0,.35); animation:choicein .28s cubic-bezier(.2,.8,.2,1) both; }
+  .cbtn::after{ content:'›'; position:absolute; right:15px; top:50%; transform:translateY(-50%); font-size:24px; font-weight:900; color:var(--orange); }
+  .cbtn:active{ transform:translateY(3px) scale(.99); box-shadow:0 1px 0 #d9c893; }
+  .cbtn:nth-child(2){ animation-delay:.05s; } .cbtn:nth-child(3){ animation-delay:.11s; } .cbtn:nth-child(4){ animation-delay:.17s; } .cbtn:nth-child(5){ animation-delay:.23s; }
+  @keyframes choicein{ from{opacity:0; transform:translateY(16px);} to{opacity:1; transform:translateY(0);} }
+  .pbanner{ background:radial-gradient(circle at 50% 45%, rgba(30,30,38,.92), rgba(0,0,0,.95)); letter-spacing:2px; }
+  .pbanner.show{ animation:bannerin .55s ease; }
+  @keyframes bannerin{ 0%{opacity:0; letter-spacing:8px;} 45%{opacity:1; letter-spacing:2px;} 100%{opacity:1;} }
+  #startov h1{ text-shadow:2px 2px 0 var(--orange), 0 0 26px rgba(247,201,72,.4); animation:titlepulse 2.6s ease-in-out infinite; }
+  @keyframes titlepulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.045);} }
+  .logo{ width:96px; height:96px; border-radius:22px; border:3px solid var(--yellow); box-shadow:0 8px 26px rgba(0,0,0,.55); margin-bottom:4px; }
+  /* character expressions */
+  .char.emote-shake{ animation:shakeE .5s ease; }
+  .char.emote-happy{ animation:happyE .6s ease; }
+  .char.emote-pop{ animation:popE .35s ease; }
+  @keyframes shakeE{ 0%,100%{transform:translateX(-50%) scale(1.05);} 20%{transform:translateX(-54%) scale(1.05);} 40%{transform:translateX(-46%) scale(1.05);} 60%{transform:translateX(-53%) scale(1.05);} 80%{transform:translateX(-47%) scale(1.05);} }
+  @keyframes happyE{ 0%,100%{transform:translateX(-50%) scale(1.05) translateY(0);} 35%{transform:translateX(-50%) scale(1.06) translateY(-16px);} 60%{transform:translateX(-50%) scale(1.05) translateY(0);} 80%{transform:translateX(-50%) scale(1.05) translateY(-6px);} }
+  @keyframes popE{ 0%{transform:translateX(-50%) scale(1.0);} 50%{transform:translateX(-50%) scale(1.1);} 100%{transform:translateX(-50%) scale(1.05);} }
+  /* week-complete celebration */
+  .ov.celeb{ background:radial-gradient(circle at 50% 40%, rgba(247,201,72,.28), rgba(0,0,0,.9)); }
+  .ov.celeb h1{ animation:celebpop .6s cubic-bezier(.2,1.4,.4,1) both; color:var(--yellow); font-size:32px; }
+  @keyframes celebpop{ 0%{transform:scale(.4); opacity:0;} 70%{transform:scale(1.12);} 100%{transform:scale(1); opacity:1;} }
+  .conf{ position:absolute; top:-24px; width:9px; height:14px; border-radius:2px; z-index:10; animation:fall 2.3s linear forwards; }
+  @keyframes fall{ to{ transform:translateY(115vh) rotate(720deg);} }
+  /* front-end menus */
+  .menu-btns{ display:flex; flex-direction:column; gap:10px; width:240px; margin-top:6px; }
+  .mbtn{ border:none; border-radius:14px; padding:13px; font-weight:800; font-size:15px; cursor:pointer; background:linear-gradient(180deg,#fffdf7,#f3ead0); color:var(--ink); box-shadow:0 4px 0 #d9c893; }
+  .mbtn:active{ transform:translateY(3px); box-shadow:0 1px 0 #d9c893; }
+  .mbtn.primary{ background:var(--yellow); box-shadow:0 4px 0 var(--yd); }
+  .mbtn.ghost{ background:rgba(255,255,255,.12); color:#fff; box-shadow:none; border:1px solid rgba(255,255,255,.3); }
+  .screen-ov{ align-items:stretch !important; justify-content:flex-start !important; padding:0 !important; overflow-y:auto; }
+  .screen-top{ position:sticky; top:0; background:var(--ink); color:#fff; display:flex; align-items:center; gap:10px; padding:12px 14px; z-index:2; }
+  .screen-top .back{ border:none; background:var(--yellow); color:var(--ink); font-weight:900; border-radius:10px; padding:6px 12px; cursor:pointer; }
+  .screen-top h2{ margin:0; font-size:18px; color:#fff; }
+  .screen-body{ padding:16px; color:#eee; max-width:520px; margin:0 auto; width:100%; }
+  .screen-body h3{ color:var(--yellow); margin:14px 0 6px; font-size:15px; text-align:left; }
+  .screen-body p{ font-size:14px; line-height:1.5; color:#e8e8e8; text-align:left; }
+  .keyrow{ display:flex; gap:10px; align-items:flex-start; margin:9px 0; text-align:left; }
+  .keyrow .ic{ font-size:20px; width:28px; text-align:center; flex:none; }
+  .keyrow div{ font-size:13.5px; line-height:1.45; }
+  .castgrid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .castcard{ background:rgba(255,255,255,.06); border-radius:14px; padding:10px; text-align:center; }
+  .castcard .cav{ height:112px; display:flex; align-items:flex-end; justify-content:center; overflow:hidden; }
+  .castcard .cav img{ max-height:112px; }
+  .castcard .cn{ font-weight:800; margin-top:6px; font-size:14px; color:#fff; }
+  .castcard .cb{ font-size:11.5px; color:#bbb; margin-top:3px; }
+  .setrow{ display:flex; justify-content:space-between; align-items:center; padding:13px 2px; border-bottom:1px solid rgba(255,255,255,.14); }
+  .toggle{ border:none; border-radius:20px; padding:8px 18px; font-weight:800; cursor:pointer; background:var(--yellow); color:var(--ink); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="scene" id="scene">
+    <div class="bg" id="bg"></div>
+    <div class="vignette"></div>
+    <div class="pbar"><div class="pfill" id="pfill"></div></div>
+    <div class="hud">
+      <span class="chip">📅 <b id="h-day">Day 1</b></span>
+      <span class="chip">⭐ <b id="h-stand">Neutral</b></span>
+      <span class="chip">🔎 <b id="h-clue">0</b></span>
+      <span class="chip m">₦<b id="h-money">40,000</b></span>
+      <span style="margin-left:auto; display:flex; gap:5px;"><button class="snd2" id="menuBtn">☰</button><button class="snd2" id="snd">🔊</button></span>
+    </div>
+    <div class="dbox" id="dbox"><div class="portrait" id="dport"></div><div class="name" id="dname"></div><div class="txt" id="dtxt"></div><span class="tip">▸</span></div>
+    <div class="choices" id="choices"></div>
+    <div class="pbanner" id="pbanner"></div>
+  </div>
+  <div class="ov board hide" id="board">
+    <h3>🔎 Evidence Board</h3><div class="sub">Tap the TWO clues that name the same suspect.</div>
+    <div class="bcards" id="bcards"></div><div class="bmsg" id="bmsg"></div>
+  </div>
+  <div class="ov hide" id="interov"><h1 id="inter-h">DAY 1</h1><h2 id="inter-title"></h2><button class="play" id="contbtn">▶ Continue</button></div>
+  <div class="ov" id="startov">
+    <img class="logo" src="art/icon-512.png" alt="">
+    <h1>GO-SLOW</h1>
+    <h2>Survive a month in Lagos.</h2>
+    <div class="menu-btns">
+      <button class="mbtn primary" id="startbtn">▶ New Game</button>
+      <button class="mbtn" id="mcontbtn" style="display:none;">⏵ Continue</button>
+      <button class="mbtn ghost" id="guidebtn">📖 How to Play</button>
+      <button class="mbtn ghost" id="castbtn">👥 Characters</button>
+      <button class="mbtn ghost" id="settingsbtn">⚙️ Settings</button>
+      <button class="mbtn ghost" id="aboutbtn">ℹ️ About</button>
+    </div>
+    <div class="menu-tag">Progress saves automatically. Tap ☰ in-game to save &amp; quit.</div>
+  </div>
+
+  <div class="ov screen-ov hide" id="guideov">
+    <div class="screen-top"><button class="back">← Back</button><h2>📖 How to Play</h2></div>
+    <div class="screen-body">
+      <p>Go-Slow is an interactive story. You read, you choose, and your choices shape a whole month — and how it ends.</p>
+      <h3>Controls</h3>
+      <div class="keyrow"><div class="ic">👆</div><div><b>Tap anywhere</b> to advance dialogue. Tap once while text is typing to reveal it instantly.</div></div>
+      <div class="keyrow"><div class="ic">🔀</div><div><b>Tap a choice</b> when replies appear. Some choices change the story for good.</div></div>
+      <div class="keyrow"><div class="ic">☰</div><div>Open the <b>in-game menu</b> to save &amp; quit — progress also saves automatically.</div></div>
+      <h3>Your stats (top bar)</h3>
+      <div class="keyrow"><div class="ic">⭐</div><div><b>Standing</b> — how HR &amp; your oga see you. Too low and you can be fired.</div></div>
+      <div class="keyrow"><div class="ic">🔎</div><div><b>Clues</b> — evidence you gather for the mystery.</div></div>
+      <div class="keyrow"><div class="ic">₦</div><div><b>Money</b> — survive the month and make rent.</div></div>
+      <div class="keyrow"><div class="ic">❤️</div><div><b>Bonds</b> — your relationships. Get close and people stand by you.</div></div>
+      <h3>Tips</h3>
+      <p>Watch for the reward badges that pop up — they mean a choice mattered. Be kind to people; it comes back around. And there is more than one way the month can end. 🚌</p>
+    </div>
+  </div>
+
+  <div class="ov screen-ov hide" id="castov">
+    <div class="screen-top"><button class="back">← Back</button><h2>👥 Characters</h2></div>
+    <div class="screen-body"><div class="castgrid" id="castgrid"></div></div>
+  </div>
+
+  <div class="ov screen-ov hide" id="settingsov">
+    <div class="screen-top"><button class="back">← Back</button><h2>⚙️ Settings</h2></div>
+    <div class="screen-body">
+      <div class="setrow"><span>🔊 Sound &amp; music</span><button class="toggle" id="menuSound">On</button></div>
+      <div class="setrow"><span>⌨️ Text speed</span><button class="toggle" id="speedBtn">Normal</button></div>
+      <div class="setrow"><span>🗑️ Reset saved progress</span><button class="toggle" id="resetBtn" style="background:#DC2626;color:#fff;">Reset</button></div>
+      <p style="margin-top:14px; color:#aaa;">Your game auto-saves as you play. Resetting clears your saved game so New Game starts fresh.</p>
+    </div>
+  </div>
+
+  <div class="ov screen-ov hide" id="aboutov">
+    <div class="screen-top"><button class="back">← Back</button><h2>ℹ️ About</h2></div>
+    <div class="screen-body" style="text-align:center;">
+      <img class="logo" src="art/icon-512.png" alt="" style="margin:14px auto;">
+      <h3 style="text-align:center;">GO-SLOW</h3>
+      <p>An interactive story set in Lagos, Nigeria. Survive a working month, chase a corruption scandal to the very top, fall in love, and decide how far you will go for the truth.</p>
+      <p style="color:#aaa; margin-top:14px;">A month-long branching story · 11 characters · many endings.<br>Version 1.0.1</p>
+      <p style="color:#ccc; font-size:13px; text-align:left; margin-top:14px;"><b>🔒 Privacy.</b> Go-Slow has no accounts, no ads, no tracking and no cookies. Your name, your look and your saved game stay on this device only, in the browser's storage. Nothing is sent to anyone. To delete it, use Settings → Reset saved progress, or clear this site's data in your browser.</p>
+      <p style="color:#ccc; font-size:13px; text-align:left;"><b>⚠️ Content note.</b> Recommended for ages 13 and over. The story includes workplace pressure, bribery and corruption, threats, and a scene where a character is attacked off-screen. Romance is between adults and stays tasteful.</p>
+      <p style="color:#888; font-size:12px;">© 2026 Chiamaka Nwabulue. All rights reserved.</p>
+    </div>
+  </div>
+  <div class="ov hide" id="custom">
+    <h1>Create your character</h1>
+    <h2>Name yourself and pick your look.</h2>
+    <input id="name-input" placeholder="Your name" maxlength="16" autocomplete="off">
+    <div class="looks" id="looks"></div>
+    <button class="play" id="beginbtn">▶ Start the month</button>
+  </div>
+  <div class="ov hide" id="endov">
+    <h1 id="end-h">END OF THE MONTH</h1><h2 id="end-sub"></h2>
+    <div class="sumrow"><div id="s-stand">💼</div><div id="s-myst">🕵🏾</div><div id="s-bond">❤️</div><div id="s-clue">🏠</div></div>
+    <p>One month. It started with a late bus. Look how far it went.</p>
+    <button class="play" id="replaybtn">🔁 Play the month again</button>
+    <button class="mbtn ghost" id="endmenu" style="margin-top:10px;">🏠 Main Menu</button>
+  </div>
+
+  <div class="ov celeb hide" id="celebov">
+    <h1 id="celeb-h">WEEK COMPLETE</h1>
+    <h2 id="celeb-sub"></h2>
+    <button class="play" id="celebbtn">▶ Keep going</button>
+  </div>
+</div>
+<script>
+(function(){
+  var CH={
+    you:{img:'art/you.png', name:'You', color:'#5aa0ff'},
+    bello:{img:'art/bello.png', name:'Mrs. Bello (HR)', color:'#ff8a4c'},
+    chidi:{img:'art/chidi.png', name:'Chidi', color:'#4ade80'},
+    oga:{img:'art/oga.png', name:'The Oga', color:'#f7c948'},
+    ada:{img:'art/ada.png', name:'Ada', color:'#ff7ab6'},
+    tunde:{img:'art/tunde.png', name:'Tunde', color:'#38bdf8'},
+    emeka:{img:'art/emeka.png', name:'Emeka', color:'#f43f5e'},
+    auditor:{img:'art/auditor.png', name:'The Auditor', color:'#c4b5fd'},
+    nkechi:{img:'art/nkechi.png', name:'Nkechi', color:'#2dd4bf'},
+    md:{img:'art/md.png', name:'Chief Mrs. Balogun', color:'#fbbf24'},
+    conductor:{emoji:'🚌', name:'Conductor Baba', color:'#7CFFA0'}
+  };
+  var BG={ office:'art/office.jpg', street:'art/herobg.jpg', bukka:'art/bukka.jpg', lounge:'art/lounge.jpg', carpark:'art/carpark.jpg', boardroom:'art/boardroom.jpg', restaurant:'art/restaurant.jpg' };
+  var LOOKS=['art/you.png','art/you-braids.png','art/you-male.png']; var chosenLook=0;
+  var CLUES={ c1:{t:'The Friday transfer', d:'Funds moved last Friday when only one person was on duty.'},
+              c2:{t:'The signature', d:'The odd vendor invoice carries the Auditor signature.'},
+              c3:{t:'Late-night visits', d:'The Auditor comes into the office after hours, alone.'} };
+  var SLOT={ left:27, center:50, right:73 }, OFF={ left:-40, right:140 }, RENT=120000;
+
+  var AC=null, sound=true, musicOn=false, musicTimer=null, curMood='day', mbar=0, mstepN=0, curBg=null, slotOf={};
+  function ac(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ AC=null; } } if(AC && AC.state==='suspended') AC.resume(); return AC; }
+  function tone(f,d,type,vol,to){ if(!sound) return; var a=ac(); if(!a) return; var o=a.createOscillator(), g=a.createGain(); o.type=type||'sine'; o.frequency.setValueAtTime(f,a.currentTime); if(to) o.frequency.exponentialRampToValueAtTime(to,a.currentTime+d); g.gain.setValueAtTime(vol||0.14,a.currentTime); g.gain.exponentialRampToValueAtTime(0.0008,a.currentTime+d); o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+d); }
+  function sfx(n){ if(!sound) return;
+    if(n==='tap') tone(430,0.06,'triangle',0.06,520);
+    else if(n==='choice') tone(520,0.09,'square',0.08,720);
+    else if(n==='clue'){ tone(720,0.1,'square',0.11,1180); setTimeout(function(){ tone(1040,0.13,'square',0.09,1500); },90); }
+    else if(n==='phase') tone(300,0.28,'sine',0.09,430);
+    else if(n==='dark') tone(140,0.45,'sawtooth',0.12,70);
+    else if(n==='money'){ tone(880,0.08,'square',0.1,1320); setTimeout(function(){ tone(1180,0.09,'square',0.08); },80); }
+    else if(n==='win'){ tone(600,0.12,'square',0.11,880); setTimeout(function(){ tone(920,0.18,'square',0.11,1300); },130); }
+  }
+  function bgMood(k){ if(k==='carpark'||k==='boardroom') return 'tense'; if(k==='lounge'||k==='restaurant'||k==='bukka') return 'warm'; return 'day'; }
+  var MOODS={ day:{tempo:112,wave:'triangle',base:196.00,prog:[[0,4,7],[7,11,14],[9,12,16],[5,9,12]]},
+              warm:{tempo:92,wave:'sine',base:174.61,prog:[[0,4,7],[5,9,12],[3,7,10],[7,11,14]]},
+              tense:{tempo:84,wave:'sawtooth',base:146.83,prog:[[0,3,7],[0,3,6],[10,13,17],[0,3,7]]},
+              bright:{tempo:128,wave:'triangle',base:261.63,prog:[[0,4,7],[5,9,12],[7,11,14],[0,4,7]]} };
+  function semi(base,s){ return base*Math.pow(2, s/12); }
+  function padNote(freq,dur,vol,wave){ if(!sound) return; var a=ac(); if(!a) return; var o=a.createOscillator(), g=a.createGain(); o.type=wave||'sine'; o.frequency.value=freq; var t=a.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.06); g.gain.exponentialRampToValueAtTime(0.0006,t+dur); o.connect(g); g.connect(a.destination); o.start(); o.stop(t+dur+0.05); }
+  function musicStep(){ var m=MOODS[curMood]||MOODS.day; var chord=m.prog[mbar%m.prog.length];
+    if(musicOn && sound){
+      if(mstepN===0){ chord.forEach(function(s){ padNote(semi(m.base*2,s),1.1,0.02,m.wave); }); padNote(semi(m.base/2,chord[0]),0.7,0.05,'sine'); }
+      else if(mstepN===2){ padNote(semi(m.base,chord[1]),0.4,0.02,m.wave); }
+      else if(mstepN===4){ padNote(semi(m.base/2,chord[0]),0.5,0.04,'sine'); padNote(semi(m.base,chord[2]),0.35,0.016,m.wave); }
+      else if(mstepN===6){ padNote(semi(m.base,chord[2]),0.3,0.016,m.wave); }
+      if(mstepN%2===1){ var arp=[chord[0],chord[1],chord[2],chord[1]][(mstepN>>1)%4]; padNote(semi(m.base*2, arp+12), 0.2, 0.018, 'triangle'); }
+    }
+    mstepN=(mstepN+1)%8; if(mstepN===0) mbar++;
+    var beat=60000/((MOODS[curMood]||MOODS.day).tempo)/2;
+    if(musicOn){ musicTimer=setTimeout(musicStep, beat); } else { musicTimer=null; }
+  }
+  function startMusic(){ musicOn=true; if(!musicTimer) musicStep(); }
+  function stopMusic(){ musicOn=false; }
+
+  var SCRIPT=[
+    /* ===== WEEK 1 ===== */
+    {phase:'🛣️ COMMUTE · Monday 7:40 AM'}, {clear:1}, {bg:'street'},
+    {narrate:"The danfo is packed to the door — sweat, engine smoke, and somebody's elbow in your back."},
+    {enter:'you', slot:'center', from:'left'},
+    {say:'conductor', text:"Enter with your change o! No change, no enter!"},
+    {say:'you', text:"(I only have a ₦1,000 note...)"},
+    {choice:"The conductor wants ₦300 — exact.", options:[ {t:"Dig for exact ₦300.", to:'exact'}, {t:"Hand ₦1,000 and demand change.", to:'demand'} ]},
+    {label:'exact'}, {say:'conductor', text:"Correct! Oya, sharp sharp."}, {jump:'office'},
+    {label:'demand'}, {say:'conductor', text:"Ah! Change where?! Manage ₦500, oga!"}, {set:{money:-200}}, {jump:'office'},
+    {label:'office'}, {phase:'💼 THE OFFICE · 8:19 AM'}, {clear:1}, {bg:'office'},
+    {narrate:"You slip in twelve minutes late."},
+    {enter:'you', slot:'left', from:'left'}, {enter:'bello', slot:'right', from:'right'},
+    {say:'bello', text:"Ah-ahn! THIS is resumption time? Three times this week!"},
+    {choice:"What do you say?", options:[ {t:"“Traffic was terrible, ma.”", to:'blame'}, {t:"“I'm so sorry, ma.”", to:'sorry'}, {t:"“At least I showed up, abi?”", to:'cheeky'} ]},
+    {label:'blame'}, {enter:'chidi', slot:'center', from:'left'}, {say:'chidi', text:"Na true, ma! Third Mainland locked this morning — I saw am!"}, {say:'bello', text:"Hmm. Last warning."}, {set:{bond:1}}, {jump:'ogaBeat'},
+    {label:'sorry'}, {say:'you', text:"I'm truly sorry, ma."}, {say:'bello', text:"...At least you have manners. Sit."}, {set:{standing:1}}, {enter:'chidi', slot:'center', from:'left'}, {jump:'ogaBeat'},
+    {label:'cheeky'}, {say:'you', text:"At least I showed up, abi?"}, {say:'bello', text:"Eh?! A query letter is coming for you TODAY!"}, {set:{standing:-1}}, {enter:'chidi', slot:'center', from:'left'}, {jump:'ogaBeat'},
+    {label:'ogaBeat'}, {exit:'bello', to:'right'}, {enter:'oga', slot:'right', from:'right'},
+    {check:'standing', lt:0, yes:'ogaBad', no:'ogaGood'},
+    {label:'ogaBad'}, {say:'oga', text:"One more slip and you are OUT."}, {jump:'chidiWhisper'},
+    {label:'ogaGood'}, {say:'oga', text:"I notice these things — the good way."}, {jump:'chidiWhisper'},
+    {label:'chidiWhisper'}, {exit:'oga', to:'right'}, {move:'you', slot:'left'}, {move:'chidi', slot:'center'},
+    {check:'bond', gte:1, yes:'chidiTrust', no:'chidiWary'},
+    {label:'chidiTrust'}, {say:'chidi', text:"Since you get my back... the month-end figures no add up. Money moved last Friday."}, {set:{c1:1, clues:1}}, {jump:'lunch'},
+    {label:'chidiWary'}, {say:'chidi', text:"The figures are off. Something happened last Friday."}, {set:{c1:1, clues:1}}, {jump:'lunch'},
+    {label:'lunch'}, {phase:'🍚 LUNCH · 1:05 PM'}, {clear:1}, {bg:'bukka'},
+    {enter:'you', slot:'left', from:'left'}, {enter:'chidi', slot:'right', from:'right'},
+    {say:'chidi', text:"That's the Auditor's signature on the invoice. Why is HE signing payments?"}, {set:{c2:1, clues:1}},
+    {say:'chidi', text:"Look — if anyone knew I showed you this, I'm finished. I've got people who depend on me. But some things just aren't right. So."},
+    {jump:'romance'},
+    {label:'romance'}, {phase:'🌆 AFTER WORK · 6:30 PM'}, {clear:1}, {bg:'lounge'},
+    {narrate:"The rooftop lounge hums. Ada from Finance, and Tunde from Security."},
+    {enter:'you', slot:'center', from:'left'},
+    {choice:"Who do you spend the evening with?", options:[ {t:"💛 Ada, from Finance", to:'ada1'}, {t:"💙 Tunde, from Security", to:'tunde1'}, {t:"🚶 Go home and rest", to:'solo1'} ]},
+    {label:'ada1'}, {enter:'ada', slot:'right', from:'right'}, {move:'you', slot:'left'}, {say:'ada', text:"Rough day? You look like someone carrying secrets."},
+    {choice:"How do you play it?", options:[ {t:"“Only good ones — like meeting you.”", to:'adaCharm'}, {t:"“Just tired.”", to:'adaPlain'} ]},
+    {label:'adaCharm'}, {say:'ada', text:"Smooth. Between us? The Auditor keeps coming in after hours."}, {set:{loveAda:1, bond:1, c3:1, clues:1}}, {jump:'night'},
+    {label:'adaPlain'}, {say:'ada', text:"Fair. Rest well."}, {jump:'night'},
+    {label:'tunde1'}, {enter:'tunde', slot:'right', from:'right'}, {move:'you', slot:'left'}, {say:'tunde', text:"You look like someone with questions. Security sees everything."},
+    {choice:"How do you play it?", options:[ {t:"“Then maybe you can help me.”", to:'tundeCharm'}, {t:"“Just here to unwind.”", to:'tundePlain'} ]},
+    {label:'tundeCharm'}, {say:'tunde', text:"The Auditor signs in after hours. Every Friday. I log it myself."}, {set:{loveTunde:1, bond:1, c3:1, clues:1}}, {jump:'night'},
+    {label:'tundePlain'}, {say:'tunde', text:"Suit yourself."}, {jump:'night'},
+    {label:'solo1'}, {narrate:"You head home early. No closer to the truth."}, {jump:'night'},
+    {label:'night'}, {phase:'🔎 THAT NIGHT · the evidence board'}, {clear:1}, {bg:'office'},
+    {check:'c3', gte:1, yes:'boardFull', no:'boardShort'},
+    {label:'boardShort'}, {narrate:"Your board has gaps — nothing ties the threads to a name yet."}, {jump:'day1end'},
+    {label:'boardFull'}, {narrate:"Three clues pinned up. Connect the dots."}, {board:1},
+    {enter:'auditor', slot:'center', from:'right'}, {say:'auditor', text:"You've been asking questions. That is... unwise."}, {set:{solved:1}}, {jump:'day1end'},
+    {label:'day1end'}, {check:'solved', gte:1, yes:'d1eGood', no:'d1ePartial'},
+    {label:'d1eGood'}, {interlude:{h:'DAY 1 ✔', title:"The trail leads to the Auditor — and he's seen your face."}}, {jump:'day2'},
+    {label:'d1ePartial'}, {interlude:{h:'DAY 1', title:"The mystery slips away — for now."}}, {jump:'day2'},
+
+    /* ===== DAY 2 ===== */
+    {label:'day2'}, {setday:2}, {phase:'☀️ DAY 2 · Tuesday'}, {clear:1}, {bg:'office'},
+    {narrate:"Tuesday. Whatever you did yesterday, today it follows you."},
+    {enter:'you', slot:'left', from:'left'},
+    {check:'standing', lt:0, yes:'d2query', no:'d2ok'},
+    {label:'d2query'}, {enter:'bello', slot:'right', from:'right'}, {say:'bello', text:"Your query letter. One more and it is finished."}, {exit:'bello', to:'right'}, {jump:'d2oga'},
+    {label:'d2ok'}, {enter:'oga', slot:'right', from:'right'}, {check:'standing', gt:0, yes:'d2praise', no:'d2neutral'},
+    {label:'d2praise'}, {say:'oga', text:"I'm putting the vendor accounts in your hands to review."}, {set:{access:1}}, {exit:'oga', to:'right'}, {jump:'d2oga'},
+    {label:'d2neutral'}, {say:'oga', text:"Keep your head down."}, {exit:'oga', to:'right'}, {jump:'d2oga'},
+    {label:'d2oga'}, {check:'solved', gte:1, yes:'d2solved', no:'d2open'},
+    {label:'d2open'}, {phase:'🔎 ANOTHER CHANCE'}, {clear:1}, {bg:'office'}, {narrate:"You still don't have the full picture. One more thread to pull."},
+    {check:'access', gte:1, yes:'d2access', no:'d2cold'},
+    {label:'d2access'}, {narrate:"You cross-check the Friday runs in the vendor files — the Auditor's name is everywhere."}, {set:{c3:1, clues:1, solved:1}}, {jump:'d2solved'},
+    {label:'d2cold'}, {interlude:{h:'DAY 2', title:"The trail is cold — for now. But the week isn't over."}}, {jump:'romance2'},
+    {label:'d2solved'}, {phase:'🕵🏾 A DANGEROUS OFFER'}, {clear:1}, {bg:'carpark'},
+    {narrate:"The car park is empty — except for a figure leaning on your car."},
+    {enter:'you', slot:'left', from:'left'}, {enter:'auditor', slot:'right', from:'right'},
+    {say:'auditor', text:"Two million naira. Forget the figures. Everyone stays happy."},
+    {choice:"The Auditor is offering a bribe. What do you do?", options:[ {t:"💰 Take the money, stay silent.", to:'eBribe'}, {t:"🎙️ Refuse — you're recording this.", to:'eHero'}, {t:"🤝 Pretend to agree, plan to expose him.", to:'eDouble'} ]},
+    {label:'eBribe'}, {set:{ending_bribe:1, money:2000000}}, {say:'you', text:"(Two million... rent is due Friday. God forgive me.)"}, {jump:'romance2'},
+    {label:'eHero'}, {set:{ending_hero:1}}, {say:'auditor', text:"You're RECORDING?! You have no idea what you've started."}, {jump:'romance2'},
+    {label:'eDouble'}, {set:{ending_double:1}}, {say:'auditor', text:"Smart. We'll be in touch."}, {jump:'romance2'},
+    {label:'romance2'}, {phase:'🌆 DAY 2 · Evening'}, {clear:1}, {bg:'lounge'},
+    {check:'loveAda', gte:1, yes:'r2ada', no:'r2t'},
+    {label:'r2t'}, {check:'loveTunde', gte:1, yes:'r2tunde', no:'r2solo'},
+    {label:'r2ada'}, {enter:'you', slot:'left', from:'left'}, {enter:'ada', slot:'right', from:'right'}, {say:'ada', text:"Whatever you're chasing... don't chase it alone."},
+    {choice:"What do you tell Ada?", options:[ {t:"“Then chase it with me.”", to:'r2adaIn'}, {t:"“I can't drag you into this.”", to:'r2adaOut'} ]},
+    {label:'r2adaIn'}, {say:'ada', text:"Together, then. I'm in."}, {set:{romance:2}}, {jump:'day3'},
+    {label:'r2adaOut'}, {say:'ada', text:"...Okay. But I'm here."}, {set:{romance:1}}, {jump:'day3'},
+    {label:'r2tunde'}, {enter:'you', slot:'left', from:'left'}, {enter:'tunde', slot:'right', from:'right'}, {say:'tunde', text:"I don't like when people I like go quiet."},
+    {choice:"What do you tell Tunde?", options:[ {t:"“Watch my back and I'll tell you everything.”", to:'r2tundeIn'}, {t:"“Safer if you stay out of it.”", to:'r2tundeOut'} ]},
+    {label:'r2tundeIn'}, {say:'tunde', text:"Always. Security detail of one."}, {set:{romance:2}}, {jump:'day3'},
+    {label:'r2tundeOut'}, {say:'tunde', text:"Stubborn. I respect it."}, {set:{romance:1}}, {jump:'day3'},
+    {label:'r2solo'}, {narrate:"No one waiting tonight. Just you and what you know."}, {jump:'day3'},
+
+    /* ===== DAY 3 ===== */
+    {label:'day3'}, {setday:3}, {phase:'☀️ DAY 3 · Wednesday'}, {clear:1}, {bg:'office'},
+    {narrate:"Midweek — and you're not the only one after that promotion."},
+    {enter:'you', slot:'left', from:'left'}, {enter:'emeka', slot:'right', from:'right'},
+    {say:'emeka', text:"Heard you've been busy. Poking around where you shouldn't."},
+    {choice:"How do you handle Emeka?", options:[ {t:"“Just doing my job.”", to:'e3deflect'}, {t:"“Careful — I'm watching you too.”", to:'e3confront'}, {t:"“We could help each other.”", to:'e3befriend'} ]},
+    {label:'e3deflect'}, {say:'emeka', text:"Mm. Keep it that way."}, {jump:'invest'},
+    {label:'e3confront'}, {say:'emeka', text:"Bold. You'll regret that."}, {set:{emekaThreat:1}}, {jump:'invest'},
+    {label:'e3befriend'}, {say:'emeka', text:"Partners, then."}, {set:{emekaAlly:1}}, {jump:'invest'},
+    {label:'invest'}, {phase:'🌙 DAY 3 · After hours'}, {clear:1}, {bg:'office'},
+    {narrate:"You need hard proof, not a theory."},
+    {check:'loveTunde', gte:1, yes:'invTunde', no:'invT2'},
+    {label:'invT2'}, {check:'loveAda', gte:1, yes:'invAda', no:'invA2'},
+    {label:'invA2'}, {check:'access', gte:1, yes:'invAccess', no:'invAlone'},
+    {label:'invTunde'}, {enter:'you', slot:'left', from:'left'}, {enter:'tunde', slot:'right', from:'right'}, {say:'tunde', text:"The camera logs are this way. The Auditor, every Friday, 2 A.M. Timestamped."}, {set:{evidence:1, romance:1}}, {jump:'money3'},
+    {label:'invAda'}, {enter:'you', slot:'left', from:'left'}, {enter:'ada', slot:'right', from:'right'}, {say:'ada', text:"The payment ledger. Every off-book transfer traces to one approver."}, {set:{evidence:1, romance:1}}, {jump:'money3'},
+    {label:'invAccess'}, {enter:'you', slot:'center', from:'left'}, {narrate:"You quietly copy the vendor records."}, {set:{evidence:1}}, {jump:'money3'},
+    {label:'invAlone'}, {enter:'you', slot:'center', from:'left'}, {narrate:"You sneak in alone — a torchlight sweeps the corridor."}, {check:'emekaThreat', gte:1, yes:'invCaught', no:'invSlip'},
+    {label:'invCaught'}, {enter:'emeka', slot:'right', from:'right'}, {say:'emeka', text:"Snooping after hours? The Oga will LOVE this."}, {set:{framed:1}}, {jump:'money3'},
+    {label:'invSlip'}, {narrate:"You slip out with a photographed document. Thin, but something."}, {set:{evidence:1}}, {jump:'money3'},
+    {label:'money3'}, {phase:'💰 DAY 3 · Rent is coming'}, {clear:1}, {bg:'lounge'}, {set:{money:-15000}},
+    {narrate:"Rent (₦120,000) is due Friday, and your account is thin."},
+    {enter:'you', slot:'center', from:'left'},
+    {choice:"How do you cover it?", options:[ {t:"💻 Freelance gig (+₦25,000)", to:'m3free'}, {t:"🤝 Ask Chidi for a loan (+₦15,000)", to:'m3loan'}, {t:"🙅 Tighten your belt", to:'m3none'} ]},
+    {label:'m3free'}, {set:{money:25000}}, {narrate:"You grind till 2 A.M. Tired, but richer."}, {jump:'day4'},
+    {label:'m3loan'}, {enter:'chidi', slot:'right', from:'right'}, {check:'bond', gte:1, yes:'m3loanY', no:'m3loanN'},
+    {label:'m3loanY'}, {say:'chidi', text:"For you? No wahala."}, {set:{money:15000}}, {jump:'day4'},
+    {label:'m3loanN'}, {say:'chidi', text:"I'm broke myself o. Sorry."}, {jump:'day4'},
+    {label:'m3none'}, {narrate:"You decide to ride it out. Risky."}, {jump:'day4'},
+
+    /* ===== DAY 4 ===== */
+    {label:'day4'}, {setday:4}, {phase:'🌅 DAY 4 · Thursday'}, {clear:1}, {bg:'office'},
+    {narrate:"Thursday. The walls feel closer today."},
+    {enter:'you', slot:'left', from:'left'}, {enter:'emeka', slot:'right', from:'right'},
+    {say:'emeka', text:"The Auditor and I? Same team. So drop it — or YOU take the fall."},
+    {choice:"Emeka just threatened you. What do you do?", options:[ {t:"“You've got nothing on me.”", to:'t4firm'}, {t:"“...Fine. I'll drop it.”", to:'t4back'}, {t:"“I already have proof, Emeka.”", to:'t4push'} ]},
+    {label:'t4firm'}, {check:'standing', gte:0, yes:'t4firmOK', no:'t4firmBad'},
+    {label:'t4firmOK'}, {say:'emeka', text:"We'll see."}, {jump:'rom4'},
+    {label:'t4firmBad'}, {say:'emeka', text:"On your LAST warning? Perfect scapegoat."}, {set:{framed:1}}, {jump:'rom4'},
+    {label:'t4back'}, {say:'emeka', text:"Smart. Stay quiet."}, {jump:'rom4'},
+    {label:'t4push'}, {check:'evidence', gte:1, yes:'t4pushOK', no:'t4pushBad'},
+    {label:'t4pushOK'}, {say:'emeka', text:"You're bluffing. ...Are you?"}, {jump:'rom4'},
+    {label:'t4pushBad'}, {say:'emeka', text:"You have NOTHING. And now I know you're a threat."}, {set:{framed:1}}, {jump:'rom4'},
+    {label:'rom4'}, {phase:'❤️ DAY 4 · Evening'}, {clear:1}, {bg:'lounge'},
+    {check:'loveAda', gte:1, yes:'r4ada', no:'r4t'},
+    {label:'r4t'}, {check:'loveTunde', gte:1, yes:'r4tunde', no:'r4solo'},
+    {label:'r4ada'}, {enter:'you', slot:'left', from:'left'}, {enter:'ada', slot:'right', from:'right'}, {say:'ada', text:"Emeka cornered me — asked what we've been doing."},
+    {choice:"What do you tell Ada?", options:[ {t:"“Let's finish this together.”", to:'r4adaIn'}, {t:"“Stay out of it — for your safety.”", to:'r4adaOut'} ]},
+    {label:'r4adaIn'}, {say:'ada', text:"All in. I'll testify if it comes to that."}, {set:{romance:1, allyPartner:1}}, {jump:'day5'},
+    {label:'r4adaOut'}, {say:'ada', text:"...Be careful."}, {jump:'day5'},
+    {label:'r4tunde'}, {enter:'you', slot:'left', from:'left'}, {enter:'tunde', slot:'right', from:'right'}, {say:'tunde', text:"Emeka knows I helped you."},
+    {choice:"What do you tell Tunde?", options:[ {t:"“Let's finish this together.”", to:'r4tundeIn'}, {t:"“Stay out of it — for your safety.”", to:'r4tundeOut'} ]},
+    {label:'r4tundeIn'}, {say:'tunde', text:"Then I'll back your story. Every timestamp."}, {set:{romance:1, allyPartner:1}}, {jump:'day5'},
+    {label:'r4tundeOut'}, {say:'tunde', text:"Stubborn. But I'm watching your back."}, {jump:'day5'},
+    {label:'r4solo'}, {narrate:"No one to share the weight with tonight."}, {jump:'day5'},
+
+    /* ===== DAY 5 · Friday — Week 1 climax ===== */
+    {label:'day5'}, {setday:5}, {phase:'☀️ DAY 5 · Friday — Rent Day'}, {clear:1}, {bg:'office'}, {set:{money:80000}},
+    {narrate:"Payday. Rent due tonight. The Oga has called a 10 A.M. meeting. Everyone."},
+    {enter:'you', slot:'center', from:'left'}, {say:'you', text:"(After rent, this will be tight... unless I handled it.)"}, {jump:'reckon'},
+    {label:'reckon'}, {phase:'⚖️ THE RECKONING'}, {clear:1}, {bg:'boardroom'},
+    {narrate:"The boardroom. The Oga. The Auditor. Emeka. All eyes turn as you walk in."},
+    {enter:'oga', slot:'right', from:'right'}, {enter:'you', slot:'left', from:'left'},
+    {say:'oga', text:"Someone here has been moving money. Today it ends. Speak."},
+    {choice:"This is it. What do you do?", options:[ {t:"📂 Present your evidence — expose them.", to:'rExpose'}, {t:"🤐 Stay silent.", to:'rSilent'}, {t:"🤝 Cut a deal with the Auditor.", to:'rDeal'} ]},
+    {label:'rExpose'}, {check:'framed', gte:1, yes:'exposeFramed', no:'exposeClean'},
+    {label:'exposeClean'}, {check:'evidence', gte:1, yes:'exposeWin', no:'exposeWeak'},
+    {label:'exposeWin'}, {enter:'auditor', slot:'center', from:'right'}, {say:'oga', text:"...Security. Escort these two out. And YOU — excellent work."}, {set:{out_hero:1}}, {jump:'week2'},
+    {label:'exposeWeak'}, {enter:'emeka', slot:'center', from:'right'}, {say:'emeka', text:"A theory with no proof? He's been unstable all week."}, {set:{out_flop:1}}, {jump:'week2'},
+    {label:'exposeFramed'}, {enter:'emeka', slot:'center', from:'right'}, {say:'emeka', text:"The person WE caught snooping is pointing fingers."}, {check:'allyPartner', gte:1, yes:'framedSaved', no:'framedDoom'},
+    {label:'framedSaved'}, {narrate:"Then your partner steps in — and backs your story with their own records."}, {set:{out_hero:1}}, {jump:'week2'},
+    {label:'framedDoom'}, {say:'oga', text:"Clear your desk. I'm sorry."}, {set:{out_fired:1}}, {jump:'week2'},
+    {label:'rSilent'}, {check:'ending_bribe', gte:1, yes:'silentBribe', no:'silentClean'},
+    {label:'silentBribe'}, {say:'you', text:"(I take the two million and say nothing.)"}, {set:{out_compromised:1}}, {jump:'week2'},
+    {label:'silentClean'}, {narrate:"You say nothing. The scheme buried, your conscience heavier."}, {set:{out_silent:1}}, {jump:'week2'},
+    {label:'rDeal'}, {enter:'auditor', slot:'center', from:'right'}, {say:'auditor', text:"A survivor. We can use someone like you."}, {set:{out_deal:1, money:500000}}, {jump:'week2'},
+
+    /* ===== WEEK 2 · The Trail Goes Higher ===== */
+    {label:'week2'}, {setday:6}, {phase:'📅 WEEK 2 · Monday'}, {clear:1}, {bg:'office'},
+    {check:'out_hero', gte:1, yes:'w2Promoted', no:'w2b'},
+    {label:'w2b'}, {check:'out_deal', gte:1, yes:'w2Ring', no:'w2c'},
+    {label:'w2c'}, {check:'out_fired', gte:1, yes:'w2Out', no:'w2d'},
+    {label:'w2d'}, {check:'out_compromised', gte:1, yes:'w2Bought', no:'w2Survivor'},
+    {label:'w2Promoted'}, {set:{power:2}}, {narrate:"New office, new title. But the higher you climb, the more they watch you."}, {jump:'w2meet'},
+    {label:'w2Ring'}, {set:{power:1}}, {narrate:"You're on the inside now. It pays well. It costs more."}, {jump:'w2meet'},
+    {label:'w2Out'}, {set:{outsider:1}}, {narrate:"Jobless — but you walked out with copies of everything. They should have kept you closer."}, {jump:'w2meet'},
+    {label:'w2Bought'}, {narrate:"The two million sits in your account like a stone. Silence has a weight."}, {jump:'w2meet'},
+    {label:'w2Survivor'}, {narrate:"Another Monday. Head down, and a secret you can't put down."}, {jump:'w2meet'},
+    {label:'w2meet'}, {phase:'📰 A NEW PLAYER'}, {clear:1}, {bg:'lounge'},
+    {enter:'you', slot:'left', from:'left'}, {enter:'nkechi', slot:'right', from:'right'},
+    {say:'nkechi', text:"Don't look alarmed. Nkechi — investigative journalist. I've watched your company for months."},
+    {say:'nkechi', text:"The Auditor was a foot soldier. The real money runs to the very top — the MD, Chief Mrs. Balogun."},
+    {say:'you', text:"(The MD herself. This is bigger than I imagined.)"},
+    {choice:"Nkechi wants to work together. Do you?", options:[ {t:"“I'm in. Here's what I have.”", to:'w2ally'}, {t:"“Maybe. I need to be careful.”", to:'w2cautious'}, {t:"“I can't be part of this.”", to:'w2refuse'} ]},
+    {label:'w2ally'}, {say:'nkechi', text:"Good. I'll dig the paper; you watch the inside."}, {set:{trustNkechi:1, evidence:1}}, {jump:'w2md'},
+    {label:'w2cautious'}, {say:'nkechi', text:"Careful is smart. Don't wait too long."}, {jump:'w2md'},
+    {label:'w2refuse'}, {say:'nkechi', text:"...Your choice. But this story is coming out."}, {jump:'w2md'},
+    {label:'w2md'}, {phase:'🍽️ AN INVITATION'}, {clear:1}, {bg:'restaurant'},
+    {check:'power', gte:1, yes:'w2dinner', no:'w2watched'},
+    {label:'w2dinner'}, {narrate:"A car, a driver, a table for two at the finest restaurant in Lagos. The MD requests your company."}, {enter:'you', slot:'left', from:'left'}, {enter:'md', slot:'right', from:'right'}, {say:'md', text:"You're clever. I collect clever people — before they become problems. Sit. Eat."}, {jump:'w2offer'},
+    {label:'w2watched'}, {narrate:"A black SUV has trailed your danfo for three days. Then a note on your desk: dinner, tonight."}, {enter:'you', slot:'left', from:'left'}, {enter:'md', slot:'right', from:'right'}, {say:'md', text:"Sit. I like to see the face of anyone poking at my house."}, {jump:'w2offer'},
+    {label:'w2offer'}, {say:'md', text:"Join me, and you'll never see the inside of a danfo again. Or keep digging — and see what happens to diggers."},
+    {choice:"How do you answer the MD?", options:[ {t:"“I'm listening.” (play along)", to:'w2play'}, {t:"“I don't scare easy, ma.” (defy)", to:'w2defy'}, {t:"“I already know more than you think.” (bluff)", to:'w2bluff'} ]},
+    {label:'w2play'}, {say:'md', text:"Sensible. We'll talk again."}, {set:{mdOffer:1}}, {jump:'w2rom'},
+    {label:'w2defy'}, {say:'md', text:"Brave. Foolish, but brave."}, {set:{mdThreat:1}}, {jump:'w2rom'},
+    {label:'w2bluff'}, {check:'evidence', gte:1, yes:'w2bluffOK', no:'w2bluffBad'},
+    {label:'w2bluffOK'}, {say:'md', text:"...Is that so. Then we understand each other. Careful, child."}, {set:{mdThreat:1}}, {jump:'w2rom'},
+    {label:'w2bluffBad'}, {say:'md', text:"You know nothing. And now you've shown me your empty hand."}, {set:{mdThreat:1, framed:1}}, {jump:'w2rom'},
+    {label:'w2rom'}, {phase:'❤️ WEEK 2 · A quiet moment'}, {clear:1}, {bg:'lounge'},
+    {check:'loveAda', gte:1, yes:'w2rAda', no:'w2rt'},
+    {label:'w2rt'}, {check:'loveTunde', gte:1, yes:'w2rTunde', no:'w2rSolo'},
+    {label:'w2rAda'}, {enter:'you', slot:'left', from:'left'}, {enter:'ada', slot:'right', from:'right'}, {say:'ada', text:"You had dinner with HER? Tell me you know how dangerous this is."}, {say:'you', text:"“I do. That's why I need you with me.”"}, {set:{romance:1}},
+    {say:'ada', text:"Then let me tell you why I'm really here. My father ran a small shop. Men like the MD bled him dry — he died owing people who could buy this whole building."},
+    {say:'ada', text:"So this was never only your fight. It's mine too."},
+    {say:'you', text:"(There's the real Ada — steel under the smile.)"},
+    {choice:"How do you answer her?", options:[ {t:"“Then we finish it together — for him.”", to:'w2rAdaClose'}, {t:"“I can't let you risk everything for me.”", to:'w2rAdaHold'} ]},
+    {label:'w2rAdaClose'}, {say:'ada', text:"...No one has ever stood WITH me before. I'm yours in this — all the way."}, {set:{deepBond:1, romance:1}}, {jump:'w2cliff'},
+    {label:'w2rAdaHold'}, {say:'ada', text:"Always the protector. It's part of why I like you. But this is my choice to make."}, {set:{romance:1}}, {jump:'w2cliff'},
+    {label:'w2rTunde'}, {enter:'you', slot:'left', from:'left'}, {enter:'tunde', slot:'right', from:'right'}, {say:'tunde', text:"The MD? You're swimming with sharks now. I'm not letting you drown."}, {set:{romance:1}},
+    {say:'tunde', text:"Truth? I can't afford to lose this job. Since our parents passed, it's me raising my two younger ones. One wrong move and they don't eat."},
+    {say:'you', text:"“Then why help me at all?”"},
+    {say:'tunde', text:"Because some things matter more than safe. YOU showed me that."},
+    {choice:"How do you answer him?", options:[ {t:"“Then we protect each other — always.”", to:'w2rTundeClose'}, {t:"“Your family comes first. Step back if you must.”", to:'w2rTundeHold'} ]},
+    {label:'w2rTundeClose'}, {say:'tunde', text:"Always. You and me, back to back — nobody touches what's mine."}, {set:{deepBond:1, romance:1}}, {jump:'w2cliff'},
+    {label:'w2rTundeHold'}, {say:'tunde', text:"...You'd give up my help just to keep me safe. That's exactly why I'm not going anywhere."}, {set:{romance:1}}, {jump:'w2cliff'},
+    {label:'w2rSolo'}, {narrate:"You go home alone, the MD's cold smile still in your memory."}, {jump:'w2cliff'},
+    {label:'w2cliff'}, {phase:'💾 THE LEDGER'}, {clear:1}, {bg:'office'},
+    {narrate:"Late that night, an envelope under your door. Inside: a USB. On it — the master ledger. Every naira, every name. Hers at the top."},
+    {enter:'you', slot:'center', from:'left'},
+    {choice:"You hold the whole scheme in your hand. What now?", options:[ {t:"📢 Give it to Nkechi — publish now.", to:'w2pubNow'}, {t:"🔍 Wait — get harder proof first.", to:'w2wait'}, {t:"🔒 Bury it. Too dangerous.", to:'w2bury'} ]},
+    {label:'w2pubNow'}, {check:'trustNkechi', gte:1, yes:'w2pubOK', no:'w2pubNo'},
+    {label:'w2pubOK'}, {set:{pubEarly:1}}, {narrate:"Nkechi takes it, eyes wide. 'This is it. But brace yourself — they'll come for us both.'"}, {jump:'week3'},
+    {label:'w2pubNo'}, {narrate:"You have no journalist to trust it to. The USB burns a hole in your pocket."}, {set:{buried:1}}, {jump:'week3'},
+    {label:'w2wait'}, {set:{evidence:1}}, {narrate:"You copy it, hide the original, and keep digging. Patience — or a fatal delay?"}, {jump:'week3'},
+    {label:'w2bury'}, {set:{buried:1}}, {narrate:"You bury the USB in a drawer and try to forget it exists."}, {jump:'week3'},
+
+    /* ===== WEEK 3 · Someone Talks ===== */
+    {label:'week3'}, {setday:11}, {phase:'📅 WEEK 3 · Monday'}, {clear:1}, {bg:'office'},
+    {narrate:"Monday. Something is wrong — people avoid your eyes. They KNOW what you're holding."},
+    {enter:'you', slot:'center', from:'left'}, {say:'you', text:"(Someone talked. But who?)"},
+    {check:'bond', gte:1, yes:'w3loyal', no:'w3mole'},
+    {label:'w3mole'}, {phase:'💔 THE LEAK'}, {clear:1}, {bg:'bukka'}, {enter:'you', slot:'left', from:'left'}, {enter:'chidi', slot:'right', from:'right'},
+    {say:'chidi', text:"They threatened my family. I told them you have the ledger. I'm so sorry."}, {set:{moleChidi:1}},
+    {choice:"Chidi betrayed you — out of fear. What do you do?", options:[ {t:"“I understand. Family first. We're okay.”", to:'w3forgive'}, {t:"“You've killed us both.”", to:'w3turn'} ]},
+    {label:'w3forgive'}, {say:'chidi', text:"...You're a better person than me. I'm with you now — for real."}, {set:{allyChidi:1}}, {jump:'w3gut'},
+    {label:'w3turn'}, {say:'chidi', text:"I deserve that."}, {jump:'w3gut'},
+    {label:'w3loyal'}, {enter:'you', slot:'left', from:'left'}, {enter:'chidi', slot:'right', from:'right'}, {say:'chidi', text:"They leaned on me HARD. I said nothing. Whatever you need — I'm in."}, {set:{allyChidi:1}}, {jump:'w3gut'},
+    {label:'w3gut'}, {phase:'💔 A PRICE PAID'}, {clear:1}, {bg:'office'},
+    {narrate:"Wednesday. Chidi's desk is empty. Then the whispers: two men caught him at his bus stop last night. He's in hospital — and 'let go,' effective immediately."},
+    {enter:'you', slot:'center', from:'left'},
+    {say:'you', text:"(They hurt Chidi. To send ME a message. This is on me.)"},
+    {choice:"What do you do about Chidi?", options:[ {t:"🏥 Drop everything and go to him.", to:'w3visit'}, {t:"🔥 Turn the grief into fuel — push harder.", to:'w3avenge'} ]},
+    {label:'w3visit'}, {clear:1}, {bg:'lounge'}, {enter:'you', slot:'left', from:'left'}, {enter:'chidi', slot:'right', from:'right'},
+    {say:'chidi', text:"You came. *winces a smile* Sharp guy... I always knew you were trouble."},
+    {say:'you', text:"“This is my fault, Chidi. I'm so sorry.”"},
+    {say:'chidi', text:"No. I chose this too. So don't waste it — go and FINISH her. For both of us."},
+    {set:{chidiBrave:1, allyChidi:1}}, {jump:'w3danger'},
+    {label:'w3avenge'}, {say:'you', text:"(No hospital visit. No mercy left in me. I'm ending this.)"}, {set:{coldPush:1}}, {jump:'w3danger'},
+    {label:'w3danger'}, {phase:'🚗 CLOSING IN'}, {clear:1}, {bg:'carpark'},
+    {narrate:"That night your flat is turned over. A note on the mirror: 'Last warning. The MD is generous. Once.'"},
+    {enter:'you', slot:'center', from:'left'},
+    {choice:"They're coming for you. Your move?", options:[ {t:"🛡️ Go public NOW — safety in daylight.", to:'w3public'}, {t:"🤝 Take the MD's 'generous' offer.", to:'w3fold'}, {t:"🕳️ Go underground for the final proof.", to:'w3underground'} ]},
+    {label:'w3public'}, {set:{goPublic:1}}, {narrate:"You call Nkechi at 3 A.M. 'Then we run it. God help us.'"}, {jump:'w3rom'},
+    {label:'w3fold'}, {set:{folded:1, money:1000000}}, {narrate:"You take the money and the silence. Alive. Comfortable. Hollow."}, {jump:'w3rom'},
+    {label:'w3underground'}, {set:{evidence:1, danger:1}}, {narrate:"You disappear into the city, chasing the one document that ends it for good."}, {jump:'w3rom'},
+    {label:'w3rom'}, {phase:'❤️ WEEK 3 · Whatever comes'}, {clear:1}, {bg:'lounge'},
+    {check:'romance', gte:2, yes:'w3rTogether', no:'w3rMaybe'},
+    {label:'w3rMaybe'}, {check:'loveAda', gte:1, yes:'w3rSpark', no:'w3rc'},
+    {label:'w3rc'}, {check:'loveTunde', gte:1, yes:'w3rSpark', no:'w3rSolo'},
+    {label:'w3rTogether'}, {narrate:"Your partner takes your hand: 'Whatever comes — we face it together. Promise me.' You promise."}, {set:{romance:1}}, {jump:'week4'},
+    {label:'w3rSpark'}, {narrate:"A late call: 'Be careful. I'm not done with you yet.' It's almost enough."}, {jump:'week4'},
+    {label:'w3rSolo'}, {narrate:"No hand to hold. Just you, and the choice that's coming."}, {jump:'week4'},
+
+    /* ===== WEEK 4 · The Reckoning (month climax) ===== */
+    {label:'week4'}, {setday:16}, {phase:'📅 WEEK 4 · The Reckoning'}, {clear:1}, {bg:'boardroom'},
+    {narrate:"One month since a danfo made you late. Today it all comes due."},
+    {enter:'you', slot:'left', from:'left'}, {enter:'md', slot:'right', from:'right'},
+    {say:'md', text:"You've been busy, little one. So — a partner, or a warning to others?"},
+    {check:'chidiBrave', gte:1, yes:'w4chidi', no:'w4choose'},
+    {label:'w4chidi'}, {enter:'chidi', slot:'left', from:'left'}, {move:'you', slot:'center'},
+    {say:'chidi', text:"*limps in, bruised but on his feet* You didn't think I'd let you face her alone?"},
+    {say:'you', text:"(Chidi. Standing — for me. I'm not alone in this.)"},
+    {say:'chidi', text:"I gave a full statement on the way here. Everything I saw. Use it."},
+    {set:{evidence:1, allyChidi:1}}, {jump:'w4choose'},
+    {label:'w4choose'},
+    {choice:"The end of the month. Choose.", options:[ {t:"📢 Expose her — publish everything.", to:'w4expose'}, {t:"⚖️ Hand it to the authorities and testify.", to:'w4testify'}, {t:"🤝 Take her offer — join the top.", to:'w4join'}, {t:"🚶 Walk away — protect what you love.", to:'w4walk'} ]},
+    {label:'w4expose'}, {check:'folded', gte:1, yes:'w4tooLate', no:'w4exposeB'},
+    {label:'w4exposeB'}, {check:'trustNkechi', gte:1, yes:'w4exposeC', no:'w4noPress'},
+    {label:'w4exposeC'}, {check:'evidence', gte:2, yes:'w4heroWin', no:'w4heroWeak'},
+    {label:'w4heroWin'}, {enter:'nkechi', slot:'center', from:'left'}, {say:'nkechi', text:"It's live. Front page, every outlet. It's OUT."}, {say:'md', text:"...What have you done."}, {set:{m_hero:1}}, {jump:'monthEnd'},
+    {label:'w4heroWeak'}, {say:'md', text:"A story with holes. My lawyers will bury it — and you — by morning."}, {set:{m_crushed:1}}, {jump:'monthEnd'},
+    {label:'w4noPress'}, {narrate:"You shout the truth into a void — no journalist, no proof anyone will print. It vanishes."}, {set:{m_crushed:1}}, {jump:'monthEnd'},
+    {label:'w4tooLate'}, {say:'md', text:"You already took my money. Whose name is on that transfer? Sit. Down."}, {set:{m_complicit:1}}, {jump:'monthEnd'},
+    {label:'w4testify'}, {check:'evidence', gte:2, yes:'w4testifyOK', no:'w4testifyBad'},
+    {label:'w4testifyOK'}, {narrate:"You walk into the anti-corruption commission with the ledger. The law grinds slowly — but it grinds."}, {set:{m_justice:1}}, {jump:'monthEnd'},
+    {label:'w4testifyBad'}, {narrate:"Without hard proof, your word is one voice against an empire. They show you the door."}, {set:{m_crushed:1}}, {jump:'monthEnd'},
+    {label:'w4join'}, {say:'md', text:"Wise. Welcome to the top, my dear. The view is worth the price."}, {set:{m_join:1, money:5000000, power:2}}, {jump:'monthEnd'},
+    {label:'w4walk'}, {narrate:"You slide the USB across the table, turn, and walk out into the Lagos night — free, unfamous, and alive."}, {set:{m_walk:1}}, {jump:'monthEnd'},
+    {label:'monthEnd'}, {finale:1}
+  ];
+
+  var LAB={}; for(var i=0;i<SCRIPT.length;i++){ if('label' in SCRIPT[i]) LAB[SCRIPT[i].label]=i; }
+  var ip=0, mode='pause', flags={}, chars={}, day=1, celebrated={};
+  var scene=document.getElementById('scene'), bg=document.getElementById('bg');
+  var dbox=document.getElementById('dbox'), dname=document.getElementById('dname'), dtxt=document.getElementById('dtxt'), dport=document.getElementById('dport');
+  var pbanner=document.getElementById('pbanner');
+
+  function resetFlags(){ flags={standing:0,bond:0,clues:0,money:40000,c1:0,c2:0,c3:0,solved:0,loveAda:0,loveTunde:0,access:0,romance:0,ending_bribe:0,ending_hero:0,ending_double:0,evidence:0,emekaThreat:0,emekaAlly:0,framed:0,allyPartner:0,out_hero:0,out_flop:0,out_fired:0,out_compromised:0,out_silent:0,out_deal:0,power:0,outsider:0,trustNkechi:0,mdOffer:0,mdThreat:0,pubEarly:0,buried:0,moleChidi:0,allyChidi:0,goPublic:0,folded:0,danger:0,m_hero:0,m_justice:0,m_crushed:0,m_complicit:0,m_join:0,m_walk:0}; day=1; }
+  function money(n){ return n.toLocaleString('en-US'); }
+  function hud(){ document.getElementById('h-day').textContent='Day '+day; document.getElementById('h-stand').textContent=flags.standing>0?'In favour':(flags.standing<0?'In trouble':'Neutral'); document.getElementById('h-clue').textContent=flags.clues; document.getElementById('h-money').textContent=money(flags.money); var pf=document.getElementById('pfill'); if(pf) pf.style.width=Math.min(100,Math.round(day/20*100))+'%'; }
+  function saveState(){ try{ localStorage.setItem('goslow_save', JSON.stringify({ip:ip,day:day,flags:flags,bg:curBg,chars:slotOf,name:CH.you.name,look:chosenLook})); }catch(e){} }
+  function hasSave(){ try{ return !!localStorage.getItem('goslow_save'); }catch(e){ return false; } }
+  function clearSave(){ try{ localStorage.removeItem('goslow_save'); }catch(e){} }
+  var typing=false, _tTimer=null, _tEl=null, _tFull='', TYPE_SPEED=16;
+  function typeOut(el, txt){ if(_tTimer) clearInterval(_tTimer); _tEl=el; _tFull=txt; el.textContent=''; typing=true; var i=0;
+    _tTimer=setInterval(function(){ i+=2; el.textContent=txt.slice(0,i); if(sound && i%8===0) tone(660,0.02,'square',0.015); if(i>=txt.length){ clearInterval(_tTimer); _tTimer=null; typing=false; } }, TYPE_SPEED); }
+  function finishType(){ if(_tTimer){ clearInterval(_tTimer); _tTimer=null; } if(_tEl) _tEl.textContent=_tFull; typing=false; }
+  function _emote(who, text){ var el=chars[who]; if(!el) return; el.classList.remove('emote-shake','emote-happy','emote-pop'); void el.offsetWidth;
+    var e='pop';
+    if(/❤️|💛|💙|🥰|😄|😍|[Ss]mooth|[Tt]ogether|[Ss]park|[Ll]ove|[Gg]lad|[Ww]elcome/.test(text)) e='happy';
+    else if(/!!|\?!|OUT|QUERY|Ah-ahn|Eh\?!|vex|your desk|RECORDING/.test(text)) e='shake';
+    el.classList.add('emote-'+e); }
+  var _popC=0;
+  function statPop(txt, color){ var idx=_popC; _popC++;
+    setTimeout(function(){ var s=document.getElementById('scene'); var el=document.createElement('div'); el.className='statpop'; el.textContent=txt; el.style.color=color||'#fff'; el.style.top=(62+idx*30)+'px'; s.appendChild(el);
+      setTimeout(function(){ if(el.parentNode) el.parentNode.removeChild(el); _popC=Math.max(0,_popC-1); }, 1500); }, idx*170); }
+
+  function setBg(k){ curBg=k; curMood=bgMood(k); bg.style.opacity='0'; setTimeout(function(){ bg.style.backgroundImage='url('+BG[k]+')'; bg.style.opacity='1'; },110); }
+  function clearChars(){ for(var id in chars){ if(chars[id].parentNode) chars[id].parentNode.removeChild(chars[id]); } chars={}; slotOf={}; }
+  function makeChar(id, fromX){ var el=document.createElement('div'); el.className='char'; el.style.left=fromX+'%'; var im=document.createElement('img'); im.src=CH[id].img; im.alt=CH[id].name; el.appendChild(im); scene.appendChild(el); chars[id]=el; return el; }
+  function doEnter(s){ var el=chars[s.enter]; if(!el){ el=makeChar(s.enter, (s.from==='right'?OFF.right:OFF.left)); } void el.offsetWidth; slotOf[s.enter]=SLOT[s.slot]; setTimeout(function(){ el.style.left=SLOT[s.slot]+'%'; },20); }
+  function doMove(s){ var el=chars[s.move]; if(el) el.style.left=SLOT[s.slot]+'%'; slotOf[s.move]=SLOT[s.slot]; }
+  function doExit(s){ var el=chars[s.exit]; if(el){ el.style.left=(s.to==='left'?OFF.left:OFF.right)+'%'; setTimeout(function(){ if(el.parentNode)el.parentNode.removeChild(el); delete chars[s.exit]; },520); } delete slotOf[s.exit]; }
+  function highlight(who){ for(var id in chars){ if(id===who) chars[id].classList.add('talk'); else chars[id].classList.remove('talk'); } }
+
+  function portraitFor(c){ if(c.img){ dport.className='portrait'; dport.style.backgroundImage='url('+c.img+')'; dport.textContent=''; } else { dport.className='portrait emoji'; dport.style.backgroundImage='none'; dport.textContent=c.emoji||'❓'; } dport.style.display='block'; }
+  function showLine(who, text){ var c=CH[who]; dbox.className='dbox show hasport'; portraitFor(c); dname.style.display='block'; dname.textContent=c.name; dname.style.color=c.color; dtxt.className='txt'; typeOut(dtxt, text); highlight(who); _emote(who, text); if(who==='auditor'||who==='emeka'||who==='md') sfx('dark'); saveState(); }
+  function showNarrate(text){ dbox.className='dbox show'; dport.style.display='none'; dname.style.display='none'; dtxt.className='txt narr'; typeOut(dtxt, text); highlight(null); saveState(); }
+  function hideDbox(){ dbox.className='dbox'; }
+
+  function showChoice(s){ hideDbox(); saveState(); var box=document.getElementById('choices'); box.className='choices show'; box.innerHTML='';
+    var p=document.createElement('div'); p.className='cprompt'; p.textContent=s.choice; box.appendChild(p);
+    s.options.forEach(function(op){ var b=document.createElement('button'); b.className='cbtn'; b.textContent=op.t;
+      b.addEventListener('click', function(ev){ ev.stopPropagation(); sfx('choice'); box.className='choices'; if(op.set) applySet(op.set); ip=LAB[op.to]; mode='pause'; run(); }); box.appendChild(b); }); }
+
+  function applySet(o){ for(var k in o){ var d=o[k]; flags[k]=(flags[k]||0)+d;
+      if(k==='c1'||k==='c2'||k==='c3'){ if(d>0){ sfx('clue'); statPop('🔎 Clue found!','#7fe0a3'); } }
+      else if(k==='money'){ if(d>0){ sfx('money'); statPop('+₦'+money(d),'#7CFFA0'); } else if(d<0){ statPop('−₦'+money(-d),'#ff9a9a'); } }
+      else if(k==='bond'){ statPop(d>0?'❤️ Bond up':'❤️ Bond down', d>0?'#ff7ab6':'#ff9a9a'); }
+      else if(k==='standing'){ statPop(d>0?'⭐ Standing up':'⭐ Standing down', d>0?'#f7c948':'#ff9a9a'); }
+      else if(k==='evidence'){ if(d>0) statPop('🧷 Evidence +1','#c4b5fd'); }
+      else if(k==='romance'){ if(d>0) statPop('💞 Closer','#ff7ab6'); }
+      else if(k==='loveAda'){ if(d>0) statPop('💛 Sparks with Ada','#ff7ab6'); }
+      else if(k==='loveTunde'){ if(d>0) statPop('💙 Sparks with Tunde','#38bdf8'); }
+      else if(k==='deepBond'){ if(d>0) statPop('💗 Something real','#ff7ab6'); }
+      else if(k==='allyChidi'){ if(d>0) statPop('🤝 Chidi has your back','#4ade80'); }
+    } hud(); }
+
+  function showBanner(txt, cb){ sfx('phase'); pbanner.textContent=txt; pbanner.classList.add('show'); setTimeout(function(){ pbanner.classList.remove('show'); cb(); }, 1250); }
+  var _celebCb=null;
+  function confettiBurst(cont){ var cols=['#F7C948','#E8590C','#16A34A','#2563EB','#ff7ab6']; for(var i=0;i<26;i++){ var c=document.createElement('div'); c.className='conf'; c.style.background=cols[i%cols.length]; c.style.left=(Math.random()*100)+'%'; c.style.animationDelay=(Math.random()*0.5)+'s'; cont.appendChild(c); (function(cc){ setTimeout(function(){ if(cc.parentNode) cc.parentNode.removeChild(cc); }, 2600); })(c); } }
+  function showCelebration(week, cb){ _celebCb=cb; sfx('win'); curMood='bright';
+    document.getElementById('celeb-h').textContent='WEEK '+week+' COMPLETE! 🎉';
+    document.getElementById('celeb-sub').textContent='₦'+money(flags.money)+'  ·  '+flags.clues+' clues  ·  '+(flags.standing>0?'in favour ⭐':(flags.standing<0?'on thin ice 😬':'holding steady'));
+    var ov=document.getElementById('celebov'); ov.className='ov celeb'; confettiBurst(ov); }
+
+  function openBoard(){ mode='board'; var owned=['c1','c2','c3'].filter(function(k){ return flags[k]; });
+    var el=document.getElementById('board'); el.className='ov board'; var box=document.getElementById('bcards'); box.innerHTML=''; var msg=document.getElementById('bmsg'); msg.textContent=''; msg.className='bmsg'; var sel=[];
+    function reset(){ sel.length=0; var cs=box.querySelectorAll('.bcard'); for(var i=0;i<cs.length;i++) cs[i].classList.remove('sel'); }
+    function check(){ var pair=sel.slice().sort();
+      if(pair.length===2 && pair[0]==='c2' && pair[1]==='c3'){ sfx('win'); msg.textContent='✔ Both point to THE AUDITOR — theory formed!'; msg.className='bmsg good'; setTimeout(function(){ el.className='ov board hide'; ip++; mode='pause'; run(); }, 1200); }
+      else { msg.textContent='✖ Those two don' + String.fromCharCode(39) + 't connect. Try again.'; msg.className='bmsg bad'; setTimeout(function(){ msg.textContent=''; msg.className='bmsg'; reset(); }, 900); } }
+    owned.forEach(function(k){ var c=CLUES[k]; var card=document.createElement('button'); card.className='bcard'; card.innerHTML='<b>'+c.t+'</b><span>'+c.d+'</span>';
+      card.addEventListener('click', function(){ if(card.classList.contains('sel')){ card.classList.remove('sel'); sel=sel.filter(function(x){return x!==k;}); return; } if(sel.length>=2) return; sfx('tap'); card.classList.add('sel'); sel.push(k); if(sel.length===2) check(); }); box.appendChild(card); }); }
+
+  function showInterlude(o){ hideDbox(); highlight(null); sfx('win'); document.getElementById('inter-h').textContent=o.h; document.getElementById('inter-title').textContent=o.title; document.getElementById('interov').className='ov'; }
+
+  function showFinale(){ hideDbox(); highlight(null); sfx('win'); clearSave(); stopMusic();
+    var head, job, myst;
+    if(flags.m_hero){ head="You brought her down. 🔥"; job="🏆 Whistleblower — a name Lagos won't forget"; myst="📢 The MD's empire: exposed"; }
+    else if(flags.m_justice){ head="You handed it to the law."; job="⚖️ A witness for the state"; myst="🏛️ Justice — slow, but coming"; }
+    else if(flags.m_join){ head="You took a seat at the top."; job="👑 One of them now — rich, untouchable"; myst="🤝 The rot rolls on, with you in it"; }
+    else if(flags.m_complicit){ head="Your own signature trapped you."; job="💼 Employed, and forever owned"; myst="💰 Silenced — you were always in the ledger"; }
+    else if(flags.m_walk){ head="You walked away — alive."; job="🚶 Free, unfamous, breathing"; myst="🌃 The rot remains. So do you."; }
+    else { head="She crushed you and the truth."; job="🧳 Broken — for now"; myst="🕵🏾 The MD walks free... this time"; }
+    if(flags.deepBond && flags.romance>=2){ head += '  And this time, you were not alone.'; }
+    var pName=flags.loveAda?'Ada':'Tunde';
+    var rom; if(flags.deepBond && flags.romance>=2) rom='💍 Building a life with '+pName; else if((flags.loveAda||flags.loveTunde) && flags.romance>=2) rom='❤️ Together with '+pName; else if(flags.loveAda) rom='💛 A spark with Ada'; else if(flags.loveTunde) rom='💙 A spark with Tunde'; else rom='🚶 Flying solo';
+    var wealth; if(flags.money>=1000000) wealth='💰 Wealthy'; else if(flags.money>=RENT) wealth='🏠 Comfortable'; else wealth='😓 Struggling';
+    document.getElementById('end-h').textContent='END OF THE MONTH'; document.getElementById('end-sub').textContent=head;
+    document.getElementById('s-stand').textContent=job; document.getElementById('s-myst').textContent=myst; document.getElementById('s-bond').textContent=rom; document.getElementById('s-clue').textContent=wealth;
+    document.getElementById('endov').className='ov'; }
+
+  function run(){
+    while(ip<SCRIPT.length){ var s=SCRIPT[ip];
+      if('label' in s){ ip++; continue; }
+      if('setday' in s){ day=s.setday; hud(); ip++; continue; }
+      if('clear' in s){ clearChars(); ip++; continue; }
+      if('set' in s){ applySet(s.set); ip++; continue; }
+      if('jump' in s){ ip=LAB[s.jump]; continue; }
+      if('check' in s){ var v=flags[s.check]||0, pass; if('gte' in s) pass=v>=s.gte; else if('lte' in s) pass=v<=s.lte; else if('gt' in s) pass=v>s.gt; else if('lt' in s) pass=v<s.lt; else if('eq' in s) pass=v===s.eq; else pass=!!v; ip=LAB[pass?s.yes:s.no]; continue; }
+      if('bg' in s){ setBg(s.bg); ip++; continue; }
+      if('phase' in s){ ip++; mode='anim'; var _pt=s.phase; var _wk=_pt.match(/WEEK\s*(\d)/); var _cw=_wk?parseInt(_wk[1])-1:0;
+        if(_cw>=1 && !celebrated[_cw]){ celebrated[_cw]=true; showCelebration(_cw, function(){ showBanner(_pt, function(){ run(); }); }); }
+        else { showBanner(_pt, function(){ run(); }); } return; }
+      if('enter' in s){ doEnter(s); ip++; mode='anim'; setTimeout(run,720); return; }
+      if('move' in s){ doMove(s); ip++; mode='anim'; setTimeout(run,640); return; }
+      if('exit' in s){ doExit(s); ip++; mode='anim'; setTimeout(run,560); return; }
+      if('say' in s){ showLine(s.say, s.text); mode='line'; return; }
+      if('narrate' in s){ showNarrate(s.narrate); mode='line'; return; }
+      if('choice' in s){ showChoice(s); mode='choice'; return; }
+      if('board' in s){ openBoard(); return; }
+      if('interlude' in s){ showInterlude(s.interlude); mode='inter'; return; }
+      if('finale' in s){ showFinale(); mode='end'; return; }
+      ip++;
+    }
+  }
+  function advance(){ if(mode!=='line') return; if(typing){ finishType(); return; } sfx('tap'); ip++; mode='pause'; run(); }
+  scene.addEventListener('click', advance);
+
+  function start(){ ac(); startMusic(); document.getElementById('startov').className='ov hide'; document.getElementById('endov').className='ov hide'; document.getElementById('board').className='ov board hide'; document.getElementById('interov').className='ov hide';
+    clearChars(); ip=0; celebrated={}; resetFlags(); hud(); mode='pause'; run(); }
+  function setSoundLabels(){ document.getElementById('snd').textContent=sound?'🔊':'🔇'; document.getElementById('menuSound').textContent=sound?'On':'Off'; }
+  var MENU_OVS=['startov','guideov','castov','settingsov','aboutov'];
+  function hideMenus(){ for(var i=0;i<MENU_OVS.length;i++){ document.getElementById(MENU_OVS[i]).classList.add('hide'); } }
+  function showHome(){ hideMenus(); document.getElementById('startov').classList.remove('hide'); refreshContinue(); }
+  function openScreen(id){ hideMenus(); document.getElementById(id).classList.remove('hide'); if(id==='castov') buildCast(); }
+  var CAST=[{id:'you',bio:'You — trying to survive the month.'},{id:'bello',bio:'HR. She issues the queries.'},{id:'chidi',bio:'Desk-mate, friend, and your conscience.'},{id:'oga',bio:'Your demanding boss.'},{id:'ada',bio:'Finance. A love interest with a score to settle.'},{id:'tunde',bio:'Security. A love interest with a family to feed.'},{id:'emeka',bio:'Your slippery office rival.'},{id:'auditor',bio:'The man quietly moving the money.'},{id:'nkechi',bio:'A fearless investigative journalist.'},{id:'md',bio:'Chief Mrs. Balogun — the top of the rot.'}];
+  function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function cleanName(v){ return String(v==null?'':v).replace(/[\u0000-\u001F\u007F<>]/g,'').trim().slice(0,16); }
+  function buildCast(){ var g=document.getElementById('castgrid'); g.innerHTML=''; for(var i=0;i<CAST.length;i++){ var c=CAST[i]; var ch=CH[c.id]; var card=document.createElement('div'); card.className='castcard'; card.innerHTML='<div class="cav"><img src="'+esc(ch.img)+'" alt=""></div><div class="cn">'+esc(ch.name)+'</div><div class="cb">'+esc(c.bio)+'</div>'; g.appendChild(card); } }
+  function toggleSound(){ sound=!sound; if(sound) ac(); setSoundLabels(); }
+  function refreshContinue(){ document.getElementById('mcontbtn').style.display = hasSave()?'inline-block':'none'; }
+  function showCustomize(){ document.getElementById('startov').className='ov hide'; document.getElementById('custom').className='ov'; buildLooks(); }
+  function buildLooks(){ var box=document.getElementById('looks'); box.innerHTML=''; LOOKS.forEach(function(src,i){ var b=document.createElement('button'); b.className='look'+(i===chosenLook?' sel':''); var im=document.createElement('img'); im.src=src; b.appendChild(im); b.addEventListener('click', function(){ chosenLook=i; var all=box.querySelectorAll('.look'); for(var j=0;j<all.length;j++) all[j].classList.remove('sel'); b.classList.add('sel'); }); box.appendChild(b); }); }
+  function beginGame(){ var nm=(document.getElementById('name-input').value||'').trim().slice(0,16); nm=cleanName(nm); CH.you.name=nm||'You'; CH.you.img=LOOKS[chosenLook]; document.getElementById('custom').className='ov hide'; clearSave(); start(); }
+  function showMenu(){ saveState(); stopMusic(); document.getElementById('startov').className='ov'; refreshContinue(); }
+  function validSave(s){ if(!s||typeof s!=='object') return false;
+    if(typeof s.ip!=='number'||s.ip<0||s.ip>=SCRIPT.length||s.ip%1) return false;
+    if(typeof s.day!=='number'||s.day<1||s.day>40) return false;
+    if(!s.flags||typeof s.flags!=='object') return false; for(var k in s.flags){ if(typeof s.flags[k]!=='number'||!isFinite(s.flags[k])) return false; }
+    if(s.bg!=null && !BG[s.bg]) return false;
+    if(s.chars){ if(typeof s.chars!=='object') return false; for(var c in s.chars){ if(!CH[c]||typeof s.chars[c]!=='number') return false; } }
+    if(s.look!=null && !(s.look>=0 && s.look<LOOKS.length && s.look%1===0)) return false;
+    if(s.name!=null && typeof s.name!=='string') return false; return true; }
+  function continueGame(){ var s; try{ s=JSON.parse(localStorage.getItem('goslow_save')); }catch(e){ s=null; } if(!validSave(s)){ clearSave(); start(); return; }
+    document.getElementById('startov').className='ov hide'; document.getElementById('endov').className='ov hide'; document.getElementById('board').className='ov board hide'; document.getElementById('interov').className='ov hide';
+    ac(); startMusic(); flags=s.flags; day=s.day; ip=s.ip; curBg=s.bg; curMood=bgMood(s.bg); clearChars(); slotOf=s.chars||{}; CH.you.name=cleanName(s.name)||'You'; if(typeof s.look==='number'){ chosenLook=s.look; CH.you.img=LOOKS[s.look]||LOOKS[0]; }
+    if(curBg){ bg.style.backgroundImage='url('+BG[curBg]+')'; bg.style.opacity='1'; }
+    for(var id in slotOf){ if(CH[id]){ var el=makeChar(id, slotOf[id]); el.style.left=slotOf[id]+'%'; } }
+    hud(); mode='pause'; run(); }
+  document.getElementById('startbtn').addEventListener('click', showCustomize);
+  document.getElementById('beginbtn').addEventListener('click', beginGame);
+  document.getElementById('mcontbtn').addEventListener('click', continueGame);
+  document.getElementById('menuSound').addEventListener('click', function(ev){ ev.stopPropagation(); toggleSound(); });
+  document.getElementById('replaybtn').addEventListener('click', function(){ clearSave(); start(); });
+  document.getElementById('contbtn').addEventListener('click', function(){ document.getElementById('interov').className='ov hide'; ip++; mode='pause'; run(); });
+  document.getElementById('menuBtn').addEventListener('click', function(ev){ ev.stopPropagation(); showMenu(); });
+  document.getElementById('snd').addEventListener('click', function(ev){ ev.stopPropagation(); toggleSound(); });
+  document.getElementById('celebbtn').addEventListener('click', function(){ document.getElementById('celebov').className='ov celeb hide'; var cb=_celebCb; _celebCb=null; if(cb) cb(); });
+  document.getElementById('guidebtn').addEventListener('click', function(){ openScreen('guideov'); });
+  document.getElementById('castbtn').addEventListener('click', function(){ openScreen('castov'); });
+  document.getElementById('settingsbtn').addEventListener('click', function(){ openScreen('settingsov'); });
+  document.getElementById('aboutbtn').addEventListener('click', function(){ openScreen('aboutov'); });
+  document.getElementById('resetBtn').addEventListener('click', function(){ clearSave(); refreshContinue(); this.textContent='Cleared'; });
+  document.getElementById('speedBtn').addEventListener('click', function(){ TYPE_SPEED=(TYPE_SPEED===16)?8:((TYPE_SPEED===8)?30:16); this.textContent=(TYPE_SPEED===8)?'Fast':((TYPE_SPEED===30)?'Slow':'Normal'); });
+  document.getElementById('endmenu').addEventListener('click', function(){ document.getElementById('endov').className='ov hide'; stopMusic(); showHome(); });
+  var _backs=document.querySelectorAll('.back'); for(var _b=0;_b<_backs.length;_b++){ _backs[_b].addEventListener('click', showHome); }
+  setSoundLabels();
+  resetFlags(); hud(); refreshContinue();
+  try{ if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(function(){}); } }catch(e){}
+})();
+</script>
+</body>
+</html>
