@@ -32,7 +32,7 @@ jobs:
       - name: Check the story for broken links
         run: node tools/check_story.js
       - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: web
       - id: deployment
